@@ -14,7 +14,9 @@ import javafx.stage.Stage;
 public class Main extends Application
 {
 
-
+    /**
+     * Application start
+     */
     @Override
     public void start(Stage primaryStage) throws Exception
     {
@@ -25,9 +27,9 @@ public class Main extends Application
         primaryStage.show();
     }
 
-
-
-
+    /**
+     * The Main main method main :)
+     */
     public static void main(String[] args)
     {
         launch(args);

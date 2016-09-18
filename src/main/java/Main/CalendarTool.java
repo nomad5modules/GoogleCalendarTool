@@ -16,31 +16,27 @@ import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.CalendarList;
 import com.google.api.services.calendar.model.CalendarListEntry;
 import com.google.api.services.calendar.model.Event;
-import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 class CalendarTool
 {
     /**
      * Application name.
      */
-    private static final String APPLICATION_NAME = "Google Calendar API Java Quickstart";
+    private static final String APPLICATION_NAME = "Google Calendar Tool";
 
     /**
      * Directory to store user credentials for this application.
      */
-    private static final File DATA_STORE_DIR = new File(System.getProperty("user.home"), ".credentials/calendar-java-quickstart");
+    private static final File DATA_STORE_DIR = new File(System.getProperty("user.home"), ".credentials/google-calendar-tool");
 
     /**
      * Global instance of the {@link FileDataStoreFactory}.
@@ -63,7 +59,7 @@ class CalendarTool
      * If modifying these scopes, delete your previously saved credentials
      * at ~/.credentials/calendar-java-quickstart
      */
-    private static final List<String> SCOPES = Arrays.asList(CalendarScopes.CALENDAR_READONLY);
+    private static final List<String> SCOPES = Collections.singletonList(CalendarScopes.CALENDAR_READONLY);
 
     static
     {
@@ -81,12 +77,8 @@ class CalendarTool
 
     /**
      * Creates an authorized Credential object.
-     *
-     * @return an authorized Credential object.
-     *
-     * @throws IOException
      */
-    static Credential authorize() throws IOException
+    private static Credential authorize() throws IOException
     {
         // Load client secrets.
         InputStream         in            = CalendarTool.class.getResourceAsStream("/client_secret.json");
@@ -106,52 +98,11 @@ class CalendarTool
 
     /**
      * Build and return an authorized Calendar client service.
-     *
-     * @return an authorized Calendar client service
-     *
-     * @throws IOException
      */
-    static Calendar getCalendarService() throws IOException
+    private static Calendar getCalendarService() throws IOException
     {
         Credential credential = authorize();
         return new Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential).setApplicationName(APPLICATION_NAME).build();
-    }
-
-    static void run() throws IOException
-    {
-        /*
-        // Build a new authorized API client service.
-        // Note: Do not confuse this class with the
-        //   com.google.api.services.calendar.model.Calendar class.
-        Calendar service = getCalendarService();
-
-        // List the next 10 events from the primary calendar.
-        DateTime              now = new DateTime(System.currentTimeMillis());
-        Events events = service.events()
-                               .list("primary")
-                               .setMaxResults(10)
-                               .setTimeMin(now)
-                               .setOrderBy("startTime")
-                               .setSingleEvents(true)
-                               .execute();
-        List<Event> items = events.getItems();
-        if(items.size() == 0)
-        {
-            System.out.println("No upcoming events found.");
-        }
-        else
-        {
-            System.out.println("Upcoming events");
-            for(Event event : items)
-            {
-                DateTime start = event.getStart().getDateTime();
-                if(start == null)
-                {
-                    start = event.getStart().getDate();
-                }
-                System.out.printf("%s (%s)\n", event.getSummary(), start);
-            }
-        }*/
     }
 
     /**
@@ -159,22 +110,15 @@ class CalendarTool
      */
     static List<CalendarListEntry> getCalendarList() throws IOException
     {
-        // Build a new authorized API client service.
-        // Note: Do not confuse this class with the
-        //   com.google.api.services.calendar.model.Calendar class.
-        Calendar service = getCalendarService();
-
-        // List the next 10 events from the primary calendar.
-        DateTime                now  = new DateTime(System.currentTimeMillis());
-        CalendarList            feed = service.calendarList().list().execute();
-        List<CalendarListEntry> cals = feed.getItems();
-        return cals;
+        Calendar     service = getCalendarService();
+        CalendarList feed    = service.calendarList().list().execute();
+        return feed.getItems();
     }
 
     /**
      * Get event count for calendar
      */
-    static float getEventCount(String calendar) throws IOException
+    static float getEventCount(String calendar, DateTime from, DateTime to) throws IOException
     {
         // Build a new authorized API client service.
         // Note: Do not confuse this class with the
@@ -182,16 +126,12 @@ class CalendarTool
         Calendar service = getCalendarService();
 
         // List the next 10 events from the primary calendar.
-        DateTime              now = new DateTime(System.currentTimeMillis());
-        Events events = service.events()
-                               .list(calendar)
-                               //.setMaxResults(10)
-                               //.setTimeMin(now)
-                               .setOrderBy("startTime")
-                               .setSingleEvents(true)
-                               .execute();
-        long duration = 0;
-        List<Event> items = events.getItems();
+        Events events = service.events().list(calendar)
+                               .setTimeMin(from)
+                               .setTimeMax(to)
+                               .setOrderBy("startTime").setSingleEvents(true).execute();
+        long        duration = 0;
+        List<Event> items    = events.getItems();
         for(Event event : items)
         {
             long v1;
@@ -224,13 +164,10 @@ class CalendarTool
 
     /**
      * Get a diff between two dates
-     * @param date1 the oldest date
-     * @param date2 the newest date
-     * @param timeUnit the unit in which you want the diff
-     * @return the diff value, in the provided unit
      */
-    public static long getDateDiff(long date1, long date2, TimeUnit timeUnit) {
-        long diffInMillies = date2 - date1;
-        return timeUnit.convert(diffInMillies,TimeUnit.MILLISECONDS);
+    private static long getDateDiff(long date1, long date2, TimeUnit timeUnit)
+    {
+        long diffInMillis = date2 - date1;
+        return timeUnit.convert(diffInMillis, TimeUnit.MILLISECONDS);
     }
 }
